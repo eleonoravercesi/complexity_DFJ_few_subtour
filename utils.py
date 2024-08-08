@@ -177,6 +177,11 @@ def ialg(G, verbose=False):
 #########################################
 # This functions use the standard library tsplib95 to parse TSPLIB files
 def debug_tsplib95(path):
+    '''
+    Remove the last line of a TSPLIB file if it contains EOF and if rise an error when trying to parse it
+    :param path: path to file
+    :return: a problem object from the tsplib library
+    '''
     try:
         problem = tsplib95.load(path)
     except:
@@ -192,6 +197,11 @@ def debug_tsplib95(path):
 
 
 def parse_TSPLIB_file(problem):
+    '''
+    Parse a TSPLIB file and return the (linearized) matrix of costs and the number of nodes. It's prepared to deal with the most common the edge_weight_types and edge_weight_formats
+    :param problem: an instance of problem for the tsplib95 library
+    :return: C (list), n (int)
+    '''
     ewt = problem.as_name_dict()['edge_weight_type']
     n = problem.dimension
     Cin = problem.edge_weights
@@ -243,6 +253,12 @@ def parse_TSPLIB_file(problem):
     return C, n
 
 def make_matrix(C, n):
+    '''
+    Create a matrix from a list of costs
+    :param C: A list of costs of dimension n*(n-1)/2
+    :param n: The dimension n
+    :return: a np.array of dimension n x n
+    '''
     # Create a matrix
     M = np.zeros((n, n))
     # Set a counter
@@ -255,6 +271,11 @@ def make_matrix(C, n):
     return M
 
 def from_tsplib_file_to_graph(filename):
+    '''
+    Create a graph from a TSPLIB file
+    :param filename: path of the tsplib file
+    :return: nx.Graph() : a complete graph; each edge has a cost attribute
+    '''
     if "tsp" not in filename:
         filename = filename + ".tsp"
     C, n = parse_TSPLIB_file(debug_tsplib95(filename))
