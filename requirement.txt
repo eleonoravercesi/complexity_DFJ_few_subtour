@@ -6,3 +6,4 @@ numpy
 matplotlib
 tqdm
 tsplib95
+pandas
