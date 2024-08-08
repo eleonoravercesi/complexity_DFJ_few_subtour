@@ -11,6 +11,8 @@ import networkx as nx
 from itertools import combinations
 import numpy as np
 from scipy.spatial.distance import cdist
+import tsplib95
+import os
 
 def sample(n, distribution):
     '''
@@ -170,3 +172,95 @@ def ialg(G, verbose=False):
     S_family = incumbent
     return S_family, len(S_family)
 
+#########################################
+# Custom function to parse TSPLIB files #
+#########################################
+# This functions use the standard library tsplib95 to parse TSPLIB files
+def debug_tsplib95(path):
+    try:
+        problem = tsplib95.load(path)
+    except:
+        # Remove EOF
+        clean_problem = open(path, "r").readlines()[:-1]
+        TEMP = open("tmp.tsp", "w+")
+        for line in clean_problem:
+            TEMP.write(line)
+        TEMP.close()
+        problem = tsplib95.load("tmp.tsp")
+        os.remove("tmp.tsp")
+    return problem
+
+
+def parse_TSPLIB_file(problem):
+    ewt = problem.as_name_dict()['edge_weight_type']
+    n = problem.dimension
+    Cin = problem.edge_weights
+    C = []
+    if ewt == "EXPLICIT":
+        ewf = problem.as_name_dict()['edge_weight_format']
+        if ewf == "FULL_MATRIX":
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(Cin[i][j])
+        elif ewf == 'UPPER_ROW':
+            for x in Cin:
+                for y in x:
+                    C.append(y)
+        elif ewf in ['LOWER_DIAG_ROW', 'UPPER_DIAG_ROW']:
+            for x in Cin:
+                for y in x:
+                    if y != 0:
+                        C.append(y)
+            if ewf == 'LOWER_DIAG_ROW':
+                C = list(reversed(C))
+    else:
+        X = np.asarray(list(problem.node_coords.values()))
+        if ewt in ["EUC_2D", "EUC_3D"]:
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(tsplib95.distances.euclidean(X[i], X[j]))
+        if ewt in ["MAN_2D", "MAN_3D"]:
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(tsplib95.distances.manhattan(X[i], X[j]))
+        if ewt in ["MAX_2D", "MAX_3D"]:
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(tsplib95.distances.maximum(X[i], X[j]))
+        if ewt == 'ATT':
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(tsplib95.distances.pseudo_euclidean(X[i], X[j]))
+        if ewt == 'GEO':
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(tsplib95.distances.geographical(X[i], X[j]))
+        if ewt == 'CEIL_2D':
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(tsplib95.distances.euclidean(X[i], X[j], round=math.ceil))
+    assert len(C) == n * (n - 1) / 2
+    return C, n
+
+def make_matrix(C, n):
+    # Create a matrix
+    M = np.zeros((n, n))
+    # Set a counter
+    cont = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            M[i, j] = C[cont]
+            M[j, i] = C[cont]
+            cont += 1
+    return M
+
+def from_tsplib_file_to_graph(filename):
+    if "tsp" not in filename:
+        filename = filename + ".tsp"
+    C, n = parse_TSPLIB_file(debug_tsplib95(filename))
+    C = make_matrix(C, n)
+    G = nx.Graph()
+    for i in range(n):
+        for j in range(i + 1, n):
+            G.add_edge(i, j, cost=C[i, j])
+    return G
