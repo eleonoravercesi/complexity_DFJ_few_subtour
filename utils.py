@@ -11,8 +11,10 @@ import networkx as nx
 from itertools import combinations
 import numpy as np
 from scipy.spatial.distance import cdist
-import tsplib95
+#import tsplib95
 import os
+import more_itertools as mit
+import elkai
 
 def sample(n, distribution):
     '''
@@ -66,15 +68,68 @@ def E(G,S):
     '''
     return [(i,j) for (i,j) in G.edges if i in S and j in S]
 
-def ialg(G, verbose=False):
+
+def tour_cost(tour, cost):
+    n = len(cost)
+    start = tour[0]
+    end = tour[n-1]
+    return sum( cost[tour[i]][tour[i+1]] for i in range(n-1) ) + cost[end][start]
+
+
+def all_partitions(lst, up=True):
+    if up:
+        for k in range(1, len(lst)+1):
+            for part in mit.set_partitions(lst, k):
+                yield part
+    else:
+        for k in range(len(lst), 0, -1):
+            for part in mit.set_partitions(lst, k):
+                yield part
+
+                
+def minimalize_partition(G, partition, tsp_cost, verbose=True):
+    for Js in all_partitions(range(len(partition))):
+        if 1 < len(Js) and len(Js) < len(partition):
+            if verbose:
+                print("trying Js =",Js)
+            new_partition = list()
+            for J in Js:
+                new_part = list()
+                for j in J:
+                    new_part += partition[j]
+                new_partition.append(new_part)
+            lkh_cost = 0
+            for new_part in new_partition:
+                cost = [ [ 0 if i==j else G.edges[i,j]['cost'] for j in new_part ] for i in new_part ]
+                tour = elkai.solve_int_matrix(cost)
+                lkh_cost += tour_cost(tour,cost)
+            if lkh_cost < tsp_cost:
+                if verbose:
+                    print("Found smaller partition:",len(partition),"->",len(new_partition))
+                    print("old_partition =",partition)
+                    print("new_partition =",new_partition)
+                return new_partition
+        
+    # partition could not be made smaller
+    return partition
+
+def ialg(G, minimalize=True, verbose=False):
     '''
     Implement the ialg algorithm as described in the paper "On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints"
     :param G: nx.Graph, with weight on the edges labelled as "cost"
+    :param minimalize: If True, attempts to reduce the partition size (# subtours) before branching
     :param verbose: If True, print the subtours found every time a solution is found and the size of the problem every 2**n iterations
     :return: List of list containing the subtours found and the number of subtours found
     '''
+    if verbose:
+        print("*****************************")
+        print("Computing TSP cost")
+        print("*****************************")
+    tsp_cost = round( mip(G, subtour_callbacks=True, verbose=verbose) )
+    
     m = gp.Model()
-    m.Params.OutputFlag = 0
+    if not verbose:
+        m.Params.OutputFlag = 0
     x = m.addVars(G.edges, vtype=GRB.BINARY)
 
     m.setObjective(gp.quicksum(G.edges[e]['cost'] * x[e] for e in G.edges), GRB.MINIMIZE)
@@ -84,17 +139,12 @@ def ialg(G, verbose=False):
 
     m.update()
 
-    # initialize upper bound to infinity
-    incumbent = None
-    UB = math.inf
-
     # store branch-and-bound nodes in a (min) heap
     B = list()
 
     # (priority=n*len(S_family)+num_comp, size=len(S_family), S_family)
     root = (0, 0, list())
     heapq.heappush(B, root)
-
 
     # run branch-and-bound
     num_nodes = 0
@@ -103,9 +153,6 @@ def ialg(G, verbose=False):
         (priority, size, S_family) = heapq.heappop(B)
         num_nodes += 1
 
-        if size >= UB:
-            continue  # prune by bound
-
         # add subtour constraints
         c = m.addConstrs(
             gp.quicksum(x[e] for e in E(G, S_family[p])) <= len(S_family[p]) - 1 for p in range(len(S_family)))
@@ -113,37 +160,37 @@ def ialg(G, verbose=False):
         # optimize
         m.optimize()
         tour_edges = [e for e in G.edges if x[e].x > 0.5]
+        cost = round(m.objVal)
 
         # remove subtour constraints (so m can be re-used for later solves)
         m.remove(c)
         m.update()
 
-        # produces a tour?
-        if nx.is_connected(G.edge_subgraph(tour_edges)):
+        # cost equals TSP cost?
+        if cost == tsp_cost:
             assert size == len(S_family)
             if verbose:
-                print("Found a solution with this many subtours:", size)
+                print("Found a solution with #SECs:", size)
                 print("Specifically, they are:")
                 for S in S_family:
                     print(S)
                 print("S_family = ", S_family)
-            UB = size
-            incumbent = S_family.copy()
-            continue  # prune by feasibility
+            return S_family, len(S_family)
 
-        # prune *children* by bound
-        if size + 1 >= UB:
-            continue
 
-        # add subproblems to heap
-        sorted_components = list(sorted(nx.connected_components(G.edge_subgraph(tour_edges)), key=len))
-        num_comp = len(sorted_components)
+        components = list(nx.connected_components(G.edge_subgraph(tour_edges)))
+        
+        if minimalize:
+            components = minimalize_partition(G, components, tsp_cost, verbose=verbose)
+        
+        num_comp = len(components)
         indices = list(range(num_comp))
 
         # print status update after 1, 2, 4, 8, 16, 32, ... BB nodes
-        if is_power_of_two(num_nodes) and verbose:
+        #if is_power_of_two(num_nodes) and verbose:
+        if verbose:
             print("num_bb_nodes, num_subtour_constrs, num_conn_comp =", num_nodes, size, num_comp)
-
+            
         # for each subset of subtours (S_1, S_2, ..., S_t ), create a subproblem
         #       that has a new constraint for S = S_1 \cup S_2 \cup ... \cup S_t
         for s in range(1, num_comp):
@@ -153,9 +200,9 @@ def ialg(G, verbose=False):
                 # create vertex subset S
                 S = list()
                 for i in subset:
-                    S += list(sorted_components[i])
+                    S += list(components[i])
 
-                    # It suffices to impose the constraint for either S or V\S.
+                # It suffices to impose the constraint for either S or V\S.
                 # We choose to pick S with:
                 #   1. |S| < |V|/2, or
                 #   2. |S| = |V|/2 and 0 \in S
@@ -169,8 +216,86 @@ def ialg(G, verbose=False):
                     heapq.heappush(B, new_node)
                     S_family.pop()
 
-    S_family = incumbent
-    return S_family, len(S_family)
+
+# Generic MIP function that can solve:
+# 1. min-weight 2-factor 
+#      mip(G)
+# 2. min-weight 2-factor subject to select subtour constraints
+#      mip(G, initial_subtours=initial_subtours)
+# 3. DFJ model with subtour callbacks
+#      mip(G, subtour_callbacks=True)
+#      option: initial_subtours
+#      option: one_cut=True adds one cut per callback
+# ...
+#
+def mip(G, initial_subtours=list(), subtour_callbacks=False, one_cut=False, return_components=False, verbose=True):
+    
+    # start with the 2-matching relaxation
+    # Create model object
+    m = gp.Model()
+    if not verbose:
+        m.Params.OutputFlag = 0
+
+    # Create variable for each edge
+    x = m.addVars( G.edges, vtype=GRB.BINARY )
+    
+    # Objective function
+    m.setObjective( gp.quicksum( G.edges[e]['cost'] * x[e] for e in G.edges), GRB.MINIMIZE )
+
+    # Add degree-two constraint for each vertex
+    m.addConstrs( gp.quicksum( x[e] for e in G.edges if e in G.edges(i)  ) == 2 for i in G.nodes )
+    
+    # Add initial subtour constraints (if any)
+    for S in initial_subtours:
+        m.addConstr( gp.quicksum( x[e] for e in E(G, S) ) <= len(S) - 1 )
+
+    # add subtour elimination constraints in callback
+    m._x = x
+    if subtour_callbacks:
+        m.Params.LazyConstraints = 1
+        m._G = G
+        m._one_cut = one_cut
+        m._subtours = list()
+        m._callback = subtour_elimination 
+        m.optimize(m._callback)
+        if verbose:
+            print("number of subtours:",len(m._subtours))
+            print("subtours =",m._subtours)
+    else:
+        m.optimize()
+        
+    if return_components == False:
+        return m.objVal
+    else:
+        chosen_edges = [ e for e in G.edges if m._x[e].x > 0.5 ]
+        return ( m.objVal, list(nx.connected_components(G.edge_subgraph(chosen_edges))) )
+    
+    
+# a function to separate subtour elimination constraints
+def subtour_elimination(m, where):
+    
+    # check if LP relaxation at this branch-and-bound node has an integer solution
+    if where != GRB.Callback.MIPSOL: 
+        return
+        
+    # retrieve the LP solution
+    xval = m.cbGetSolution(m._x)
+    G = m._G
+
+    # which edges are selected?
+    tour_edges = [ e for e in G.edges if xval[e] > 0.5 ]
+
+    # edges already form a tour; no cut needed
+    if nx.is_connected( G.edge_subgraph( tour_edges )):
+        return
+
+    # for each subtour, add a cut
+    for S in sorted(nx.connected_components( G.edge_subgraph( tour_edges ) ), key=len):
+        m.cbLazy( gp.quicksum( m._x[e] for e in E(G,S) ) <= len(S) - 1 )
+        #print("added cut for S =",S)
+        m._subtours.append(S)
+        if m._one_cut:
+            return
 
 #########################################
 # Custom function to parse TSPLIB files #
