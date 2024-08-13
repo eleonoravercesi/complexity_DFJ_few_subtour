@@ -96,26 +96,35 @@ def all_partitions(lst):
                 yield partition
                 
 def minimalize_partition(G, partition, tsp_cost, verbose=True):
+    # lkh[J] = lkh ( G[\cup_{j \in J} partition[j] ] )
+    lkh = dict()
     for Js in all_partitions(range(len(partition))):
         if 1 < len(Js) and len(Js) < len(partition):
-            if verbose:
-                print("trying Js =",Js)
-            new_partition = list()
-            for J in Js:
-                new_part = list()
-                for j in J:
-                    new_part += partition[j]
-                new_partition.append(new_part)
-            lkh_cost = 0
-            for new_part in new_partition:
-                cost = [ [ 0 if i==j else G.edges[i,j]['cost'] for j in new_part ] for i in new_part ]
-                tour = elkai.solve_int_matrix(cost)
-                lkh_cost += tour_cost(tour,cost)
+            #if verbose:
+            #    print("trying Js =",Js)
+            if len(Js) == 2:
+                for J in Js:
+                    new_part = list()
+                    for j in J:
+                        new_part += partition[j]
+                    
+                    cost = [ [ 0 if i==j else G.edges[i,j]['cost'] for j in new_part ] for i in new_part ]
+                    tour = elkai.solve_int_matrix(cost)
+                    lkh[frozenset(J)] = tour_cost(tour,cost)
+
+            lkh_cost = sum( lkh[frozenset(J)] for J in Js )
             if lkh_cost < tsp_cost:
+                new_partition = list()
+                for J in Js:
+                    new_part = list()
+                    for j in J:
+                        new_part += partition[j]
+                    new_partition.append(new_part)
                 if verbose:
+                    #print("lkh =",lkh)
                     print("Found smaller partition:",len(partition),"->",len(new_partition))
-                    print("old_partition =",partition)
-                    print("new_partition =",new_partition)
+                    #print("old_partition =",partition)
+                    #print("new_partition =",new_partition)
                 return new_partition
         
     # partition could not be made smaller
