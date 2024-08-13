@@ -70,22 +70,30 @@ def E(G,S):
 
 
 def tour_cost(tour, cost):
-    n = len(cost)
+    n = len(tour)
     start = tour[0]
     end = tour[n-1]
     return sum( cost[tour[i]][tour[i+1]] for i in range(n-1) ) + cost[end][start]
 
+# def all_partitions_simple(lst):
+#     for k in range(1, len(lst)+1):
+#         for partition in mit.set_partitions(lst, k):
+#             yield partition
 
-def all_partitions(lst, up=True):
-    if up:
-        for k in range(1, len(lst)+1):
-            for part in mit.set_partitions(lst, k):
-                yield part
-    else:
-        for k in range(len(lst), 0, -1):
-            for part in mit.set_partitions(lst, k):
-                yield part
-
+def all_partitions(lst):
+    # k=1 case...
+    for partition in mit.set_partitions(lst, 1):
+        yield partition
+    for k in range(2, len(lst)+1):
+        # first try partitions like [ [0], [1], [2], [3,4,5,6,7] ]
+        # that are primarily singletons
+        for subset in combinations(lst, k-1):
+            yield [ [lst[i]] for i in subset ] + [ [ i for i in lst if i not in subset ] ]
+        
+        # now, try the others
+        for partition in mit.set_partitions(lst, k):
+            if max( len(part) for part in partition ) + (k-1) < len(lst):
+                yield partition
                 
 def minimalize_partition(G, partition, tsp_cost, verbose=True):
     for Js in all_partitions(range(len(partition))):
@@ -113,7 +121,59 @@ def minimalize_partition(G, partition, tsp_cost, verbose=True):
     # partition could not be made smaller
     return partition
 
-def ialg(G, minimalize=True, verbose=False):
+
+def is_two_factor(G):
+    return all( G.degree(i) == 2 for i in G.nodes )
+
+def find_2SECs(G, tour):
+    
+    S_family = set()
+    n = len(tour)
+    assert n == G.number_of_nodes()
+    root = nx.utils.arbitrary_element(G.nodes)
+    
+    em = dict()
+    for i,j in G.edges:
+        em[i,j] = (i,j)
+        em[j,i] = (i,j)
+        
+    tour_edges = [ em[tour[i-1],tour[i]] for i in range(n) ]
+    
+    for p1 in range(n):
+        for p2 in range(n):
+            e1 = em[tour[p1],tour[(p1+1)%n]]
+            e2 = em[tour[p2],tour[(p2+1)%n]]
+            old_cost = G.edges[e1]['cost'] + G.edges[e2]['cost']
+            
+            if p2 == ( (p1+1)%n ) or p1 == ( (p2+1)%n ):
+                continue
+                
+            e3 = em[tour[(p1+1)%n],tour[p2]]
+            e4 = em[tour[(p2+1)%n],tour[p1]]
+            new_cost = G.edges[e3]['cost'] + G.edges[e4]['cost']
+            
+            if new_cost >= old_cost:
+                continue
+                
+            new_edges = tour_edges.copy()
+            new_edges.remove(e1)
+            new_edges.remove(e2)
+            new_edges.append(e3)
+            new_edges.append(e4)
+            
+            GN = G.edge_subgraph(new_edges)
+            if is_two_factor(GN):
+                comp = list(nx.connected_components(GN))
+                assert len(comp)==2
+                for S in comp:
+                    case1 = (len(S) < n/2)
+                    case2 = (len(S) == n/2 and root in S)
+                    if case1 or case2:
+                        S_family.add(frozenset(S))
+    return S_family
+
+
+def ialg(G, minimalize=True, smart_initialize=True, verbose=False):
     '''
     Implement the ialg algorithm as described in the paper "On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints"
     :param G: nx.Graph, with weight on the edges labelled as "cost"
@@ -125,7 +185,8 @@ def ialg(G, minimalize=True, verbose=False):
         print("*****************************")
         print("Computing TSP cost")
         print("*****************************")
-    tsp_cost = round( mip(G, subtour_callbacks=True, verbose=verbose) )
+    (tsp_cost, tour_edges) = mip(G, subtour_callbacks=True, return_edges=True, verbose=verbose) 
+    tsp_cost = round(tsp_cost)
     
     m = gp.Model()
     if not verbose:
@@ -143,7 +204,19 @@ def ialg(G, minimalize=True, verbose=False):
     B = list()
 
     # (priority=n*len(S_family)+num_comp, size=len(S_family), S_family)
-    root = (0, 0, list())
+    if smart_initialize:
+        (start, end) = tour_edges[0]
+        tour = list( nx.dfs_preorder_nodes(G.edge_subgraph(tour_edges[1:]), source=start) )
+        SECs_set = find_2SECs(G, tour)
+        SECs = [ list(S) for S in SECs_set ]
+        if verbose:
+            print("With smart initialization, we begin with #SECs =",len(SECs))
+            print("They are:")
+            for S in SECs:
+                print(S)
+        root = (0, len(SECs), SECs)
+    else:
+        root = (0, 0, list())
     heapq.heappush(B, root)
 
     # run branch-and-bound
@@ -177,10 +250,9 @@ def ialg(G, minimalize=True, verbose=False):
                 print("S_family = ", S_family)
             return S_family, len(S_family)
 
-
         components = list(nx.connected_components(G.edge_subgraph(tour_edges)))
         
-        if minimalize:
+        if minimalize and len(components) > 2:
             components = minimalize_partition(G, components, tsp_cost, verbose=verbose)
         
         num_comp = len(components)
@@ -228,7 +300,9 @@ def ialg(G, minimalize=True, verbose=False):
 #      option: one_cut=True adds one cut per callback
 # ...
 #
-def mip(G, initial_subtours=list(), subtour_callbacks=False, one_cut=False, return_components=False, verbose=True):
+def mip(G, initial_subtours=list(), subtour_callbacks=False, one_cut=False, return_components=False, return_edges=False, verbose=True):
+    
+    assert not return_components or not return_edges, "Cannot return both. Pick one."
     
     # start with the 2-matching relaxation
     # Create model object
@@ -264,12 +338,15 @@ def mip(G, initial_subtours=list(), subtour_callbacks=False, one_cut=False, retu
     else:
         m.optimize()
         
-    if return_components == False:
-        return m.objVal
-    else:
+    if return_edges:
+        chosen_edges = [ e for e in G.edges if m._x[e].x > 0.5 ]
+        return ( m.objVal, chosen_edges )
+    elif return_components:
         chosen_edges = [ e for e in G.edges if m._x[e].x > 0.5 ]
         return ( m.objVal, list(nx.connected_components(G.edge_subgraph(chosen_edges))) )
-    
+    else:
+        return m.objVal
+
     
 # a function to separate subtour elimination constraints
 def subtour_elimination(m, where):
