@@ -134,6 +134,7 @@ def minimalize_partition(G, partition, tsp_cost, verbose=True):
 def is_two_factor(G):
     return all( G.degree(i) == 2 for i in G.nodes )
 
+
 def find_2SECs(G, tour):
     
     S_family = set()
@@ -182,6 +183,90 @@ def find_2SECs(G, tour):
     return S_family
 
 
+# can we remote any three edges from tour, add three back, and get 2-factor with less cost than TSP tour?
+def find_3SECs(G, tour, twoSECs):
+    
+    partitions = set()
+    n = len(tour)
+    assert n == G.number_of_nodes()
+    root = nx.utils.arbitrary_element(G.nodes)
+    
+    em = dict()
+    for i,j in G.edges:
+        em[i,j] = (i,j)
+        em[j,i] = (i,j)
+        
+    tour_edges = [ em[tour[i-1],tour[i]] for i in range(n) ]
+    
+    for p1 in range(n):
+        for p2 in range(n):
+            for p3 in range(n):
+                e1 = em[tour[p1],tour[(p1+1)%n]]
+                e2 = em[tour[p2],tour[(p2+1)%n]]
+                e3 = em[tour[p3],tour[(p3+1)%n]]
+                old_cost = G.edges[e1]['cost'] + G.edges[e2]['cost'] + G.edges[e3]['cost']
+
+                if p1 == p2 or p2 == p3 or p3 == p1:
+                    continue
+                
+                if p2 == ( (p1+1)%n ) or p3 == ( (p2+1)%n ) or p1 == ( (p3+1)%n ):
+                    continue
+                    
+                if p1 == ( (p2+1)%n ) or p2 == ( (p3+1)%n ) or p3 == ( (p1+1)%n ):
+                    continue
+
+                e4 = em[tour[(p2+1)%n],tour[p1]]
+                e5 = em[tour[(p3+1)%n],tour[p2]]
+                e6 = em[tour[(p1+1)%n],tour[p3]]
+                new_cost = G.edges[e4]['cost'] + G.edges[e5]['cost'] + G.edges[e6]['cost']
+
+                if new_cost >= old_cost:
+                    continue
+
+                new_edges = tour_edges.copy()
+                new_edges.remove(e1)
+                new_edges.remove(e2)
+                new_edges.remove(e3)
+                new_edges.append(e4)
+                new_edges.append(e5)
+                new_edges.append(e6)
+
+                GN = G.edge_subgraph(new_edges)
+                if is_two_factor(GN):
+                    comp = list(nx.connected_components(GN))
+                    #print("comp =",comp)
+                    assert len(comp)==3
+                    partitions.add(frozenset(frozenset(p) for p in comp))
+#     print("partitions =")
+#     for p in partitions:
+#         print(p)
+        
+    final_partitions = set()
+        
+    for S_family in partitions:
+        found = False
+        for S in S_family:
+            if S in twoSECs:
+                found = True
+                break
+
+        for S1 in S_family:
+            for S2 in S_family:
+                if S1 != S2:
+                    S = frozenset(list(S1)+list(S2))
+                    if S in twoSECs:
+                        found = True
+                        break
+
+        if not found:
+            final_partitions.add(S_family)
+        
+#     print("final_partitions =")
+#     for p in final_partitions:
+#         print(p)
+    return final_partitions
+
+
 def ialg(G, minimalize=True, smart_initialize=True, verbose=False):
     '''
     Implement the ialg algorithm as described in the paper "On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints"
@@ -211,6 +296,7 @@ def ialg(G, minimalize=True, smart_initialize=True, verbose=False):
 
     # store branch-and-bound nodes in a (min) heap
     B = list()
+    partitions = dict()
 
     # (priority=n*len(S_family)+num_comp, size=len(S_family), S_family)
     if smart_initialize:
@@ -218,11 +304,22 @@ def ialg(G, minimalize=True, smart_initialize=True, verbose=False):
         tour = list( nx.dfs_preorder_nodes(G.edge_subgraph(tour_edges[1:]), source=start) )
         SECs_set = find_2SECs(G, tour)
         SECs = [ list(S) for S in SECs_set ]
+        partitions[2] = set()
+        for S in SECs:
+            VS = [ i for i in G.nodes if i not in S ]
+            partition = { frozenset(S), frozenset(VS) }
+            partitions[2].add( frozenset(partition) )
         if verbose:
             print("With smart initialization, we begin with #SECs =",len(SECs))
             print("They are:")
             for S in SECs:
                 print(S)
+        threeps = find_3SECs(G, tour, SECs_set)
+        partitions[3] = set()
+        for pn in threeps:
+            partition = { frozenset(p) for p in pn }
+            partitions[3].add(frozenset(partition))
+        print("partitions =",partitions)
         root = (0, len(SECs), SECs)
     else:
         root = (0, 0, list())
@@ -257,15 +354,74 @@ def ialg(G, minimalize=True, smart_initialize=True, verbose=False):
                 for S in S_family:
                     print(S)
                 print("S_family = ", S_family)
+                print("And finally, we have partitions =",partitions)
             return S_family, len(S_family)
 
-        components = list(nx.connected_components(G.edge_subgraph(tour_edges)))
+        # check if we can use partition from partition pool
+        components = False
+        if nx.number_connected_components(G.edge_subgraph(tour_edges)) > 2:
+            for partition in partitions[2]:
+                feasible = True
+
+                for S in S_family:
+                    found_crossing = False
+                    for part in partition:
+                        ctS = sum( 1 for i in part if i in S )
+                        ctVS = sum( 1 for i in part if i not in S )
+                        if ctS>0 and ctVS>0:
+                            found_crossing = True
+                            break
+
+                    if not found_crossing:
+                        feasible = False
+                        break
+
+                if feasible:
+                    print("Found partition from pool:",partition)
+                    components = [ list(part) for part in partition ]
+                    print("Its components are:",components)
+                    break
+                    
+            if not components:
+                for partition in partitions[3]:
+                    feasible = True
+
+                    for S in S_family:
+                        found_crossing = False
+                        for part in partition:
+                            ctS = sum( 1 for i in part if i in S )
+                            ctVS = sum( 1 for i in part if i not in S )
+                            if ctS>0 and ctVS>0:
+                                found_crossing = True
+                                break
+
+                        if not found_crossing:
+                            feasible = False
+                            break
+
+                    if feasible:
+                        print("Found partition from pool:",partition)
+                        components = [ list(part) for part in partition ]
+                        print("Its components are:",components)
+                        break
         
-        if minimalize and len(components) > 2:
-            components = minimalize_partition(G, components, tsp_cost, verbose=verbose)
+        # cannot find suitable partition in pool. Use 2-factor instead
+        if not components:
+            components = list(nx.connected_components(G.edge_subgraph(tour_edges)))
+            if minimalize and len(components) > 2:
+                components = minimalize_partition(G, components, tsp_cost, verbose=verbose)
         
         num_comp = len(components)
         indices = list(range(num_comp))
+        
+        # add partition to pool
+        try:
+            partitions[num_comp]
+        except:
+            partitions[num_comp] = set()
+            
+        partition = { frozenset(comp) for comp in components }
+        partitions[num_comp].add( frozenset(partition) )
 
         # print status update after 1, 2, 4, 8, 16, 32, ... BB nodes
         #if is_power_of_two(num_nodes) and verbose:
@@ -292,7 +448,8 @@ def ialg(G, minimalize=True, smart_initialize=True, verbose=False):
 
                 if case1 or case2:
                     S_family.append(S)
-                    priority = G.number_of_nodes() * size + num_comp
+                    #priority = G.number_of_nodes() * size + num_comp
+                    priority = tsp_cost * (size+1) - cost
                     new_node = (priority, size + 1, S_family.copy())
                     heapq.heappush(B, new_node)
                     S_family.pop()
@@ -376,12 +533,16 @@ def subtour_elimination(m, where):
         return
 
     # for each subtour, add a cut
+    root = nx.utils.arbitrary_element(G.nodes)
+    n = G.number_of_nodes()
     for S in sorted(nx.connected_components( G.edge_subgraph( tour_edges ) ), key=len):
-        m.cbLazy( gp.quicksum( m._x[e] for e in E(G,S) ) <= len(S) - 1 )
-        #print("added cut for S =",S)
-        m._subtours.append(S)
-        if m._one_cut:
-            return
+        case1 = ( len(S) < n/2 )
+        case2 = ( len(S) == n/2 and root in S )
+        if case1 or case2:
+            m.cbLazy( gp.quicksum( m._x[e] for e in E(G,S) ) <= len(S) - 1 )
+            m._subtours.append(S)
+            if m._one_cut:
+                return
 
 #########################################
 # Custom function to parse TSPLIB files #
