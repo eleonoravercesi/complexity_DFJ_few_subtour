@@ -1,4 +1,3 @@
-heapq
 gurobipy
 networkx
 scipy
@@ -9,3 +8,4 @@ tsplib95
 pandas
 more_itertools
 elkai
+jupyterlab
