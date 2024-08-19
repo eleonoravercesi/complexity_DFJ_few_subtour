@@ -195,17 +195,17 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
     :return: partitions, collection of *all* vertex partitions that the algorithm branched on
     :return: max_comp, the max number of components (or parts) across the partitions
     '''
-    if verbose:
-        print("*****************************")
-        print("Computing TSP cost")
-        print("*****************************")
-    (tsp_cost, tour_edges) = mip(G, subtour_callbacks=True, return_edges=True, verbose=verbose) 
+    start_tsp_time = time.time()
+    # Here, we set the verbosity of the mip = False to keep the output of a reasonable size
+    (tsp_cost, tour_edges) = mip(G, subtour_callbacks=True, return_edges=True, verbose=False)
     tsp_cost = round(tsp_cost)
+    end_tsp_time = time.time() - start_tsp_time
+    print("TSP compute in {} seconds. TSP cost = {}".format(end_tsp_time, tsp_cost))
     
     start_time = time.perf_counter()
     m = gp.Model()
-    if not verbose:
-        m.Params.OutputFlag = 0
+    # We refer to the verbosity of the ialg algorithm. All the output of Gurobi have been turned off
+    m.Params.OutputFlag = 0
     x = m.addVars(G.edges, vtype=GRB.BINARY)
 
     # minimize the sum of edge weights
@@ -245,12 +245,12 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
         
         # check time limit
         elapsed = time.perf_counter() - start_time
-        if verbose:
-            print("elapsed time =", elapsed)
+        #if verbose:
+        #    print("elapsed time =", elapsed)
         if elapsed > time_limit:
             if verbose:
                 print("Exceeded time limit. Exiting")
-            return (list(), -1, partitions, max_comp)
+            return (list(), -1, partitions, max_comp, 3600)
         
         (priority, size, S_family) = heapq.heappop(B)
         num_nodes += 1
@@ -276,7 +276,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
                 print("Specifically, they are:")
                 for S in S_family:
                     print(S)
-            return (S_family, len(S_family), partitions, max_comp)
+            return (S_family, len(S_family), partitions, max_comp, time.perf_counter() - start_time)
 
         # first, try partition from partition pool
         components = False

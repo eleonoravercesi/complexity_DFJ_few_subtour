@@ -38,11 +38,11 @@ def sample(n, distribution):
                 G.add_edge(i, j, cost=round(D[i, j]))  # Round to the nearest integer
         return G
     if distribution == "exponential":
-        D = np.random.exponential(1/999, (n, n)) # You sample the whole matrix at once, but you only use the upper triangular part
+        D = np.random.exponential(999, (n, n)) # You sample the whole matrix at once, but you only use the upper triangular part
         G = nx.Graph()
         for i in range(n):
             for j in range(i + 1, n):
-                G.add_edge(i, j, cost=round(1000*D[i, j]))  # Multiply every value by 1000 and round just to avoid having 0 costs
+                G.add_edge(i, j, cost=round(D[i, j]))
         return G
 
 
@@ -157,5 +157,5 @@ def from_tsplib_file_to_graph(filename):
     G = nx.Graph()
     for i in range(n):
         for j in range(i + 1, n):
-            G.add_edge(i, j, cost=C[i, j])
+            G.add_edge(i, j, cost=int(C[i, j])) # Ensure that the cost is an integer
     return G
