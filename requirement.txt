@@ -7,3 +7,5 @@ matplotlib
 tqdm
 tsplib95
 pandas
+more_itertools
+elkai

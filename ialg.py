@@ -202,7 +202,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
     (tsp_cost, tour_edges) = mip(G, subtour_callbacks=True, return_edges=True, verbose=verbose) 
     tsp_cost = round(tsp_cost)
     
-    start = time.perf_counter()
+    start_time = time.perf_counter()
     m = gp.Model()
     if not verbose:
         m.Params.OutputFlag = 0
@@ -244,7 +244,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
     while len(B) > 0:
         
         # check time limit
-        elapsed = time.perf_counter() - start
+        elapsed = time.perf_counter() - start_time
         if verbose:
             print("elapsed time =", elapsed)
         if elapsed > time_limit:
