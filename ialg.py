@@ -200,7 +200,8 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
     (tsp_cost, tour_edges) = mip(G, subtour_callbacks=True, return_edges=True, verbose=False)
     tsp_cost = round(tsp_cost)
     end_tsp_time = time.time() - start_tsp_time
-    print("TSP compute in {} seconds. TSP cost = {}".format(end_tsp_time, tsp_cost))
+    if verbose:
+        print("TSP compute in {} seconds. TSP cost = {}".format(end_tsp_time, tsp_cost))
     
     start_time = time.perf_counter()
     m = gp.Model()
