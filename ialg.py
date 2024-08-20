@@ -205,6 +205,10 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
     
     start_time = time.perf_counter()
     m = gp.Model()
+    # Try to fix bug
+    m.Params.MIPGap = 1e-16
+    m.Params.FeasibilityTol = 1e-9
+    m.Params.IntFeasTol = 1e-9
     # We refer to the verbosity of the ialg algorithm. All the output of Gurobi have been turned off
     m.Params.OutputFlag = 0
     x = m.addVars(G.edges, vtype=GRB.BINARY)

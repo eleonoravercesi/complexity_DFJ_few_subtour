@@ -27,6 +27,10 @@ def set_cover_subroutine(partitions, verbose=True):
     m = gp.Model()
     if not verbose:
         m.Params.OutputFlag = 0
+
+    m.Params.MIPGap = 1e-16
+    m.Params.FeasibilityTol = 1e-9
+    m.Params.IntFeasTol = 1e-9
     
     collection = partitions_subsets(partitions)
     s = m.addVars(len(collection), vtype=GRB.BINARY)

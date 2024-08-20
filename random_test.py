@@ -302,7 +302,7 @@ for n in tqdm(range(n_min, n_max + 1, step)):
 
 plt.figure()
 for n in range(n_min, n_max + 1, step):
-    x = [y[1] for y in out[n]]
+    x = [y[2] for y in out[n]]
     # Make a boxplot ouf of x
     bp = plt.boxplot(x, vert=True, patch_artist=True, positions=[n], widths=0.6,
                      showfliers=False)  # Just to make the boxplot more readable
@@ -367,8 +367,8 @@ for n in tqdm(range(n_min, n_max + 1, step)):
 
 plt.figure()
 for n in range(n_min, n_max + 1, step):
-    x = [y[3] for y in out[n]]
-    x_minimalize_False = [y[3] for y in out_minimalize_False[n]]
+    x = [y[4] for y in out[n]]
+    x_minimalize_False = [y[4] for y in out_minimalize_False[n]]
     bp = plt.boxplot(x, vert=True, patch_artist=True, positions=[n], widths=0.6, showfliers=False)
     bp_minimalize_False = plt.boxplot(x_minimalize_False, vert=True, patch_artist=True, positions=[n + 1], widths=0.6, showfliers=False)
     for patch in bp['boxes']:
