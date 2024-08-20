@@ -49,13 +49,4 @@ def set_cover_subroutine(partitions, verbose=True):
     if verbose:
         print(f"To cut off these partitions, require at least {num_SECs} SECs.")
     
-    # re-optimize to get smallest SECs
-    cardinality = round( m.objVal )
-    m.addConstr( gp.quicksum(s) == cardinality )
-    m.setObjective( gp.quicksum( len(collection[i]) * s[i] for i in range(len(collection)) ), GRB.MINIMIZE )
-    m.optimize()
-    
-    if verbose:
-        print(f"Among sufficient collections of {num_SECs} SECS, the smallest total size |S_1|+|S_2|+...+|S_k*| is {m.objVal}.")
-    
     return [ collection[i] for i in range(len(collection)) if s[i].x > 0.5 ]
