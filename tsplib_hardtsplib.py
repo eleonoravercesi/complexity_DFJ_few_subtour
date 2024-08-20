@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import networkx as nx
 
 # # Running the `ialg` algorithm on the TSPLIB and the HardTSPLIB instances
 # 
@@ -70,15 +71,14 @@ for instance_name, n in tsplib_instances[1:]:
         
     # check that k* >= size_S_family
     partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
-    smallest_S_family = set_cover_subroutine(partitions_list, verbose=False)
-    print("k* =",size_S_family,"for S_family =",smallest_S_family)
+    smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
+    print("k* =",size_S_family,"for S_family =", smallest_S_family)
     assert len(smallest_S_family) == size_S_family
     
     # check that k* <= size_S_family
-    two_factor_cost = mip(G, initial_subtours=smallest_S_family, verbose=False)
+    two_factor_cost, x = mip(G, initial_subtours=smallest_S_family, verbose=False, return_edges=True)
+    # Get a subgraph with these edges
     tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
-    print("two_factor_cost =", two_factor_cost)
-    print("tsp_cost =", tsp_cost)
     assert round(two_factor_cost) == round(tsp_cost)
     
     print(" ") # Leave some space
