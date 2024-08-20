@@ -57,7 +57,7 @@ out = {}
 # In[44]:
 
 
-for instance_name, n in tsplib_instances:
+for instance_name, n in tsplib_instances[1:]:
     # Parse the instance
     G = from_tsplib_file_to_graph("./data/" + instance_name)
     print("******* Instance:", instance_name, "*******")
@@ -77,6 +77,8 @@ for instance_name, n in tsplib_instances:
     # check that k* <= size_S_family
     two_factor_cost = mip(G, initial_subtours=smallest_S_family, verbose=False)
     tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
+    print("two_factor_cost =", two_factor_cost)
+    print("tsp_cost =", tsp_cost)
     assert round(two_factor_cost) == round(tsp_cost)
     
     print(" ") # Leave some space
