@@ -229,7 +229,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
         (start, end) = tour_edges[0]
         tour = list( nx.dfs_preorder_nodes(G.edge_subgraph(tour_edges[1:]), source=start) )
         partitions[2] = quick_bipartitions(G, tour)
-        twoSECs = [ list(partition)[0] for partition in partitions[2] ]
+        twoSECs = [ list(list(partition)[0]) for partition in partitions[2] ]
         if verbose:
             print("With smart initialization, we begin with #SECs =",len(twoSECs))
             print("They are:")
