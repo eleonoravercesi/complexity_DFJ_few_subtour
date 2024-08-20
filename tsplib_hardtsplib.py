@@ -21,14 +21,25 @@ import pandas as pd
 import pickle
 
 
-# ## TSPLIB instances
-# 
-# These are the instances we were able to conduct the experiment on. Bigger instances were not feasible to run on our machine. If you want to test other instances, just add them to the `tsplib_instances` list at position 0.
+'''
+gr96	96
+rat99	99
+kroC100	100
+kroA100	100
+rd100	100
+kroD100	100
+kroE100	100
+kroB100	100
+'''
 
 # In[41]:
 
 
-tsplib_instances = [("burma14", 14), ("ulysses16", 16), ("gr17", 17), ("gr21", 21), ("ulysses22", 22),  ("gr24", 24), ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42), ("att48", 48), ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70), ("eil76", 76), ("pr76", 76)]
+# tsplib_instances = [("burma14", 14), ("ulysses16", 16), ("gr17", 17), ("gr21", 21), ("ulysses22", 22),  ("gr24", 24),
+#                     ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42), ("att48", 48),
+#                     ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70),
+#                     ("eil76", 76), ("pr76", 76)]
+tsplib_instances = [("gr96", 96), ("rat99", 99), ("kroA100", 100), ("kroB100", 100), ("kroC100", 100), ("kroD100", 100), ("kroE100", 100), ("rd100", 100)]
 
 
 # In[42]:
