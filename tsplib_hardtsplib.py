@@ -36,11 +36,11 @@ kroB100	100
 # In[41]:
 
 
-# tsplib_instances = [("burma14", 14), ("ulysses16", 16), ("gr17", 17), ("gr21", 21), ("ulysses22", 22),  ("gr24", 24),
-#                     ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42), ("att48", 48),
-#                     ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70),
-#                     ("eil76", 76), ("pr76", 76)]
-tsplib_instances = [("gr96", 96), ("rat99", 99), ("kroA100", 100), ("kroB100", 100), ("kroC100", 100), ("kroD100", 100), ("kroE100", 100), ("rd100", 100)]
+tsplib_instances = [("burma14", 14), ("ulysses16", 16), ("gr17", 17), ("gr21", 21), ("ulysses22", 22),  ("gr24", 24),
+                    ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42), ("att48", 48),
+                     ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70),
+                     ("eil76", 76), ("pr76", 76), ("gr96", 96), ("rat99", 99), ("kroA100", 100), ("kroB100", 100),
+                    ("kroC100", 100), ("kroD100", 100), ("kroE100", 100), ("rd100", 100)]
 
 
 # In[42]:
@@ -58,12 +58,12 @@ out = {}
 # In[44]:
 
 
-for instance_name, n in tsplib_instances[1:]:
+for instance_name, n in tsplib_instances:
     # Parse the instance
     G = from_tsplib_file_to_graph("./data/" + instance_name)
     print("******* Instance:", instance_name, "*******")
-    (S_family, size_S_family, partitions, c, runtime) = ialg(G, verbose=True)
-    out[instance_name] = (S_family, size_S_family, partitions, c, runtime)
+    (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=True)
+    out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
     
     if size_S_family == -1:
         print("Ran into time limit.")
@@ -74,17 +74,23 @@ for instance_name, n in tsplib_instances[1:]:
     smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
     print("k* =",size_S_family,"for S_family =", smallest_S_family)
     assert len(smallest_S_family) == size_S_family
-    
-    # check that k* <= size_S_family
-    two_factor_cost, x = mip(G, initial_subtours=smallest_S_family, verbose=False, return_edges=True)
-    # Get a subgraph with these edges
+
+    # Compute the TSP
     tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
-    assert round(two_factor_cost) == round(tsp_cost)
+
+    # check that k* <= size_S_family
+    two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
+    assert round(two_factor_cost_with_S_family) == round(tsp_cost)
+    two_factor_cost, x = mip(G, initial_subtours=smallest_S_family, verbose=False, return_edges=True)
+    if round(two_factor_cost) == round(tsp_cost):
+        out[instance_name].append(two_factor_cost)
+    else:
+        out[instance_name].append([-1])
     
     print(" ") # Leave some space
 
     # At each iteration save the out dictionary in pickle
-    with open("OUT_TSPLIB.pickle", "wb") as f:
+    with open("OUT_TSPLIB_no_minimalize.pickle", "wb") as f:
         pickle.dump(out, f)
 
     # Print the dataset at each iteration

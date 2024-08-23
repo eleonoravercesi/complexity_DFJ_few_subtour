@@ -255,7 +255,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
         if elapsed > time_limit:
             if verbose:
                 print("Exceeded time limit. Exiting")
-            return (list(), -1, partitions, max_comp, 3600)
+            return (list(), -1, partitions, max_comp, 3600, num_nodes)
         
         (priority, size, S_family) = heapq.heappop(B)
         num_nodes += 1
@@ -281,7 +281,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
                 print("Specifically, they are:")
                 for S in S_family:
                     print(S)
-            return (S_family, len(S_family), partitions, max_comp, time.perf_counter() - start_time)
+            return (S_family, len(S_family), partitions, max_comp, time.perf_counter() - start_time, num_nodes)
 
         # first, try partition from partition pool
         components = False
