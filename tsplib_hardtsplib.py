@@ -22,11 +22,11 @@ import pandas as pd
 import pickle
 
 
-# tsplib_instances = [("burma14", 14), ("ulysses16", 16), ("gr17", 17), ("gr21", 21), ("ulysses22", 22),  ("gr24", 24),
-#                     ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42), ("att48", 48),
-#                      ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70),
-#                      ("eil76", 76), ("pr76", 76), ("gr96", 96), ("rat99", 99), ("kroA100", 100), ("kroB100", 100),
-#                     ("kroC100", 100), ("kroD100", 100), ("kroE100", 100), ("rd100", 100)]
+tsplib_instances = [("burma14", 14), ("ulysses16", 16), ("gr17", 17), ("gr21", 21), ("ulysses22", 22),  ("gr24", 24),
+                    ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42), ("att48", 48),
+                     ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70),
+                     ("eil76", 76), ("pr76", 76), ("gr96", 96), ("rat99", 99), ("kroA100", 100), ("kroB100", 100),
+                    ("kroC100", 100), ("kroD100", 100), ("kroE100", 100), ("rd100", 100)]
 
 
 
@@ -53,7 +53,7 @@ out = {}
 Random instances
 '''
 for minimalize in [True, False]:
-    for instance_name, n in hard_tsplib_instances_random:
+    for instance_name, n in tsplib_instances:
         # Parse the instance
         G = from_tsplib_file_to_graph("./data/" + instance_name)
         print("******* Instance:", instance_name, "*******")
