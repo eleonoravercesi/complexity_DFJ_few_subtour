@@ -60,7 +60,7 @@ for minimalize in [True, False]:
         (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
         out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
         # At each iteration save the out dictionary in pickle
-        with open("OUT_HardTSPLIB_random_minimalize_{}.pickle".format(minimalize), "wb") as f:
+        with open("OUT_TSPLIB_minimalize_{}.pickle".format(minimalize), "wb") as f:
             pickle.dump(out, f)
 
         if size_S_family == -1:
