@@ -47,97 +47,113 @@ hard_tsplib_instances_from_tsplib = [("gr24_hard", 24), ("bayg29_hard", 29), ("b
 
 
 for minimalize in [True, False]:
-    out = {}
-    for instance_name, n in tsplib_instances:
-        # Parse the instance
-        G = from_tsplib_file_to_graph("./data/" + instance_name)
-        print("******* Instance:", instance_name, "*******")
-        (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
-        out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
-        # At each iteration save the out dictionary in pickle
-        with open("OUT_TSPLIB_minimalize_{}.pickle".format(minimalize), "wb") as f:
-            pickle.dump(out, f)
+    # If the file pickle is already created, don't run the algorithm again
+    try:
+        with open("OUT_TSPLIB_minimalize_{}.pickle".format(minimalize), "rb") as f:
+            out = pickle.load(f)
+        print("TSPLIB_minimalize_{}.pickle already exists".format(minimalize))
+    except:
+        out = {}
+        for instance_name, n in tsplib_instances:
+            # Parse the instance
+            G = from_tsplib_file_to_graph("./data/" + instance_name)
+            print("******* Instance:", instance_name, "*******")
+            (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
+            out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
+            # At each iteration save the out dictionary in pickle
+            with open("OUT_TSPLIB_minimalize_{}.pickle".format(minimalize), "wb") as f:
+                pickle.dump(out, f)
 
-        if size_S_family == -1:
-            print("Ran into time limit.")
-            continue
+            if size_S_family == -1:
+                print("Ran into time limit.")
+                continue
 
-        # check that k* >= size_S_family
-        partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
-        smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
-        print("k* =",size_S_family,"for S_family =", smallest_S_family)
-        assert len(smallest_S_family) == size_S_family
+            # check that k* >= size_S_family
+            partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
+            smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
+            print("k* =",size_S_family,"for S_family =", smallest_S_family)
+            assert len(smallest_S_family) == size_S_family
 
-        # Compute the TSP
-        tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
+            # Compute the TSP
+            tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
 
-        # check that k* <= size_S_family
-        two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
-        assert round(two_factor_cost_with_S_family) == round(tsp_cost)
-
-
-for minimalize in [True, False]:
-    out = {}
-    for instance_name, n in hard_tsplib_instances_from_tsplib:
-        # Parse the instance
-        G = from_tsplib_file_to_graph("./data/" + instance_name)
-        print("******* Instance:", instance_name, "*******")
-        (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
-        out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
-        # At each iteration save the out dictionary in pickle
-        with open("OUT_HardTSPLIB_TSPLIB_minimalize_{}.pickle".format(minimalize), "wb") as f:
-            pickle.dump(out, f)
-
-        if size_S_family == -1:
-            print("Ran into time limit.")
-            continue
-
-        # check that k* >= size_S_family
-        partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
-        smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
-        print("k* =",size_S_family,"for S_family =", smallest_S_family)
-        assert len(smallest_S_family) == size_S_family
-
-        # Compute the TSP
-        tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
-
-        # check that k* <= size_S_family
-        two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
-        assert round(two_factor_cost_with_S_family) == round(tsp_cost)
-
-        print(" ") # Leave some space
+            # check that k* <= size_S_family
+            two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
+            assert round(two_factor_cost_with_S_family) == round(tsp_cost)
 
 
 for minimalize in [True, False]:
-    out = {}
-    for instance_name, n in hard_tsplib_instances_random:
-        # Parse the instance
-        G = from_tsplib_file_to_graph("./data/" + instance_name)
-        print("******* Instance:", instance_name, "*******")
-        (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
-        out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
-        # At each iteration save the out dictionary in pickle
-        with open("OUT_HardTSPLIB_random_minimalize_{}.pickle".format(minimalize), "wb") as f:
-            pickle.dump(out, f)
+    try:
+        with open("OUT_HardTSPLIB_TSPLIB_minimalize_{}.pickle".format(minimalize), "rb") as f:
+            out = pickle.load(f)
+        print("HardTSPLIB_TSPLIB_minimalize_{}.pickle already exists".format(minimalize))
+    except:
+        out = {}
+        for instance_name, n in hard_tsplib_instances_from_tsplib:
+            # Parse the instance
+            G = from_tsplib_file_to_graph("./data/" + instance_name)
+            print("******* Instance:", instance_name, "*******")
+            (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
+            out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
+            # At each iteration save the out dictionary in pickle
+            with open("OUT_HardTSPLIB_TSPLIB_minimalize_{}.pickle".format(minimalize), "wb") as f:
+                pickle.dump(out, f)
 
-        if size_S_family == -1:
-            print("Ran into time limit.")
-            continue
+            if size_S_family == -1:
+                print("Ran into time limit.")
+                continue
 
-        # check that k* >= size_S_family
-        partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
-        smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
-        print("k* =",size_S_family,"for S_family =", smallest_S_family)
-        assert len(smallest_S_family) == size_S_family
+            # check that k* >= size_S_family
+            partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
+            smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
+            print("k* =",size_S_family,"for S_family =", smallest_S_family)
+            assert len(smallest_S_family) == size_S_family
 
-        # Compute the TSP
-        tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
+            # Compute the TSP
+            tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
 
-        # check that k* <= size_S_family
-        two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
-        assert round(two_factor_cost_with_S_family) == round(tsp_cost)
+            # check that k* <= size_S_family
+            two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
+            assert round(two_factor_cost_with_S_family) == round(tsp_cost)
 
-        print(" ") # Leave some space
+            print(" ") # Leave some space
+
+
+for minimalize in [True, False]:
+    try:
+        with open("OUT_HardTSPLIB_random_minimalize_{}.pickle".format(minimalize), "rb") as f:
+            out = pickle.load(f)
+        print("HardTSPLIB_random_minimalize_{}.pickle already exists".format(minimalize))
+    except:
+        out = {}
+        for instance_name, n in hard_tsplib_instances_random:
+            # Parse the instance
+            G = from_tsplib_file_to_graph("./data/" + instance_name)
+            print("******* Instance:", instance_name, "*******")
+            (S_family, size_S_family, partitions, c, runtime, num_nodes) = ialg(G, verbose=False, minimalize=minimalize)
+            out[instance_name] = [S_family, size_S_family, partitions, c, runtime, num_nodes]
+            # At each iteration save the out dictionary in pickle
+            with open("OUT_HardTSPLIB_random_minimalize_{}.pickle".format(minimalize), "wb") as f:
+                pickle.dump(out, f)
+
+            if size_S_family == -1:
+                print("Ran into time limit.")
+                continue
+
+            # check that k* >= size_S_family
+            partitions_list = [ [ list(part) for part in partition ] for npts in partitions for partition in partitions[npts] ]
+            smallest_S_family = set_cover_subroutine(partitions_list, verbose=True)
+            print("k* =",size_S_family,"for S_family =", smallest_S_family)
+            assert len(smallest_S_family) == size_S_family
+
+            # Compute the TSP
+            tsp_cost = mip(G, subtour_callbacks=True, verbose=False)
+
+            # check that k* <= size_S_family
+            two_factor_cost_with_S_family, _ = mip(G, initial_subtours=S_family, verbose=False, return_edges=True)
+            assert round(two_factor_cost_with_S_family) == round(tsp_cost)
+
+            print(" ") # Leave some space
 
 
 
