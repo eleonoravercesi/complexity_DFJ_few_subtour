@@ -3,8 +3,10 @@ from ialg import ialg
 import pandas as pd
 import numpy as np
 
-instance_name = "dantzig42.tsp"
-#instance_name = "brazil58.tsp"
+#instance_name = "dantzig42.tsp"
+
+
+instance_name = "brazil58.tsp"
 
 G = from_tsplib_file_to_graph("./data/" + instance_name)
 print("******* Instance:", instance_name, "*******")

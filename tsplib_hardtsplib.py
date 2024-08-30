@@ -36,6 +36,7 @@ hard_tsplib_instances_random = [("10001_hard", 10), ("10007_hard", 10), ("10008_
                             ("20009_hard", 20), ("20181_hard", 20), ("25001_hard", 25), ("25004_hard", 25),
                             ("25006_hard", 25), ("30001_hard", 30), ("30003_hard", 30), ("30005_hard", 30),
                             ("33001_hard", 33), ("35002_hard", 35), ("35003_hard", 35), ("35009_hard", 35),
+
                             ("40003_hard", 40), ("40004_hard", 40), ("40008_hard", 40)]
 
 hard_tsplib_instances_from_tsplib = [("gr24_hard", 24), ("bayg29_hard", 29), ("bays29_hard", 29),
