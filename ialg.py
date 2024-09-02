@@ -232,7 +232,14 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
             for S in twoSECs:
                 print(S)
         max_comp = 2 if len(twoSECs)>0 else 0
-        root = (0, len(twoSECs), twoSECs)
+        # Return, among the two components, the one with the smallest cardinality
+        twoSECs_smallest_cardinality = []
+        for S in twoSECs:
+            if len(S) < G.number_of_nodes() / 2:
+                twoSECs_smallest_cardinality.append(S)
+            else:
+                twoSECs_smallest_cardinality.append([i for i in G.nodes if i not in S])
+        root = (0, len(twoSECs), twoSECs_smallest_cardinality)
     else:
         max_comp = 0
         root = (0, 0, list())
@@ -277,6 +284,13 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
                 print("Specifically, they are:")
                 for S in S_family:
                     print(S)
+            # For each set of subtours, return the one of smallest cardinality
+            S_family_reduced = []
+            for S in S_family:
+                if len(S) < G.number_of_nodes() / 2:
+                    S_family_reduced.append(S)
+                else:
+                    S_family_reduced.append([i for i in G.nodes if i not in S])
             return (S_family, len(S_family), partitions, max_comp, time.perf_counter() - start_time, num_nodes)
 
         # first, try partition from partition pool
