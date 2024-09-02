@@ -1,6 +1,6 @@
-# On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints
+# The Dantzig-Fulkerson-Johnson TSP formulation is easy to solve for few subtour constraints
 
-This is GitHub repository accompaining the paper "On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints", submitted to Informs Journal on Computing and currently available as a preprint on Optimization Online.
+This is GitHub repository accompaining the paper "The Dantzig-Fulkerson-Johnson TSP formulation is easy to solve for few subtour constraints", which is submitted to a journal and currently available as a preprint on Optimization Online.
 
 The folder contains the following files:
 
@@ -12,7 +12,6 @@ The folder contains the following files:
 To run the notebook, first put in the folder `data` and put there the instances of the [TSPLIB](http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/) [1] and the [HardTSPLIB](https://github.com/eleonoravercesi/HardTSPLIB/) [2].
 
 [1] Reinelt, Gerhard. "TSPLIB—A traveling salesman problem library." ORSA journal on computing 3.4 (1991): 376-384.
-
 
 [2] Vercesi, Eleonora, et al. "On the generation of metric TSP instances with a large integrality gap by branch-and-cut." Mathematical Programming Computation 15.2 (2023): 389-416.
 
