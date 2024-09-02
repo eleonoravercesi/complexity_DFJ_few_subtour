@@ -229,8 +229,6 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
         if verbose:
             print("With smart initialization, we begin with #SECs =",len(twoSECs))
             print("They are:")
-            for S in twoSECs:
-                print(S)
         max_comp = 2 if len(twoSECs)>0 else 0
         # Return, among the two components, the one with the smallest cardinality
         twoSECs_smallest_cardinality = []
@@ -240,6 +238,9 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
             else:
                 twoSECs_smallest_cardinality.append([i for i in G.nodes if i not in S])
         root = (0, len(twoSECs), twoSECs_smallest_cardinality)
+        if verbose:
+            for S in twoSECs_smallest_cardinality:
+                print(S)
     else:
         max_comp = 0
         root = (0, 0, list())
@@ -291,7 +292,7 @@ def ialg(G, minimalize=True, smart_initialize=True, partition_pool=True, verbose
                     S_family_reduced.append(S)
                 else:
                     S_family_reduced.append([i for i in G.nodes if i not in S])
-            return (S_family, len(S_family), partitions, max_comp, time.perf_counter() - start_time, num_nodes)
+            return (S_family_reduced, len(S_family), partitions, max_comp, time.perf_counter() - start_time, num_nodes)
 
         # first, try partition from partition pool
         components = False
