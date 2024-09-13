@@ -1,15 +1,16 @@
-# On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints
+# The Dantzig-Fulkerson-Johnson TSP formulation is easy to solve for few subtour constraints
 
-This is GitHub repository accompaining the paper "On the complexity of the Dantzig-Fulkerson-Johnson TSP formulation for few subtour constraints", submitted to Informs Journal on Computing and currently available as a preprint on Optimization Online.
+This is GitHub repository accompaining the paper "The Dantzig-Fulkerson-Johnson TSP formulation is easy to solve for few subtour constraints".
 
 The folder contains the following files:
 
-- `tsplib_hardtsplib.ipynb`  for reproducing the results of Table 1 and 2.
-- `random.ipynb` for the results of Figure 3 and 5. 
-- `plot.ipynb` for the results of Figure 4.
-- `utils.py` containing the functions used in the notebooks, that can be of independent interest.
+- `tsplib_hardtsplib.ipynb`  for reproducing the results of Table 1, 3 and 4.
+- `focus_dantzig42_brazil58.ipynb` for the results of Table 2.
+- `random.ipynb` for the results of Figure 5 and 7. 
+- `plot.ipynb` for the results of Figure 6.
+- `utils.py, ialg.py, cover.py` containing the functions used in the notebooks, that can be of independent interest.
 
-To run the notebook, first put in the folder `data` and put there the instances of the [TSPLIB](http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/) [1] and the [HardTSPLIB](https://github.com/eleonoravercesi/HardTSPLIB/) [2].
+To run the notebooks, first put in the folder `data` and put there the instances of the [TSPLIB](http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/) [1] and the [HardTSPLIB](https://github.com/eleonoravercesi/HardTSPLIB/) [2].
 
 [1] Reinelt, Gerhard. "TSPLIB—A traveling salesman problem library." ORSA journal on computing 3.4 (1991): 376-384.
 
