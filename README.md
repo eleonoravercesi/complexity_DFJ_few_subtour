@@ -8,6 +8,7 @@ The folder contains the following files:
 - `focus_dantzig42_brazil58.ipynb` for the results of Table 2.
 - `random.ipynb` for the results of Figure 5 and 7. 
 - `plot.ipynb` for the results of Figure 6.
+- `rectilinear_3D_instances.ipynb` for the results of Section 5.4.
 - `utils.py, ialg.py, cover.py` containing the functions used in the notebooks, that can be of independent interest.
 
 To run the notebooks, first put in the folder `data` and put there the instances of the [TSPLIB](http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/) [1] and the [HardTSPLIB](https://github.com/eleonoravercesi/HardTSPLIB/) [2].
