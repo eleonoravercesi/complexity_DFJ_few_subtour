@@ -22,8 +22,7 @@ TSPLIB
 #                    ("fri26", 29), ("bayg29", 29), ("bays29", 29), ("dantzig42", 42), ("swiss42", 42)]
 # In case you want to test also these instances
 large_tsplib_instance = [("att48", 48), ("gr48", 48), ("hk48", 48), ("eil51", 51), ("berlin52", 52), ("brazil58", 58), ("st70", 70),
-                     ("eil76", 76), ("pr76", 76), ("gr96", 96), ("rat99", 99), ("kroA100", 100), ("kroB100", 100),
-                    ("kroC100", 100), ("kroD100", 100), ("kroE100", 100), ("rd100", 100)]
+                     ("eil76", 76), ("pr76", 76), ("gr96", 96), ("rat99", 99)]
 
 
 # ### With minimalization
