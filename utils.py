@@ -90,14 +90,16 @@ def parse_TSPLIB_file(problem):
             for x in Cin:
                 for y in x:
                     C.append(y)
-        elif ewf in ['LOWER_DIAG_ROW', 'UPPER_DIAG_ROW']:
+        elif ewf == 'UPPER_DIAG_ROW':
             for x in Cin:
                 for y in x:
                     if y != 0:
                         C.append(y)
-            if ewf == 'LOWER_DIAG_ROW':
-                C = list(reversed(C))
-    else:
+        elif ewf == 'LOWER_DIAG_ROW':
+            # A little bit slower, but correct!
+            for i in range(n):
+                for j in range(i + 1, n):
+                    C.append(problem.get_weight(i + 1, j + 1))
         X = np.asarray(list(problem.node_coords.values()))
         if ewt in ["EUC_2D", "EUC_3D"]:
             for i in range(n):
